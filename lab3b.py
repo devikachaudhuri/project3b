@@ -54,10 +54,20 @@ def update_inode_link_count():
 
 def update_previous_inodes():#todo: this is slow.
     for item in dir_list:
-        inode = item.parent_inode
-        for item2 in dir_list:
-            if inode == item.file_inode:
-                item.previous_inode = item2.parent_inode
+ #       print "item " + str(item.parent_inode)
+        inode = str(item.parent_inode)
+        if inode == '2':
+            item.previous_inode = '2'
+        else:
+            for item2 in dir_list:
+#            print "item2 " + str(item2.parent_inode)
+                if inode == str(item2.file_inode) and item2.name != "'.'":
+#                    print "item name" + item.name
+#                    print "item2 name" + item2.name
+#                    print "inode " + str(item.parent_inode)
+#                    print "previous inode " + str(item2.parent_inode)
+                    item.previous_inode = str(item2.parent_inode)
+                    continue
 
 def is_there_unallocated_inodes():
     zero = int(superblock[0].num_inodes) - reserved - len(inode_list)
@@ -85,16 +95,20 @@ def check_inodes():
 def check_directories():
     update_previous_inodes()
     for item in dir_list:
+        #print "name" + item.name
+        #print "item.parent node" + item.parent_inode
+        #print "item.file node" + item.file_inode
+        #print "item.previous node" + str(item. previous_inode)
         #check for invalid inodes
         if item.file_inode < 1 or item.file_inode > superblock[0].num_inodes:
-            print "DIRECTORY INODE " + item.parent_inode + " NAME '" + item.name + "' INVALID INODE " + item.file_inode
+            print "DIRECTORY INODE " + item.parent_inode + " NAME " + item.name + " INVALID INODE " + item.file_inode
         #check for unallocated inodes
-        if (is_on_alloc_list(item.file_inode) == 0):
-            print "DIRECTORY INODE " + item.parent_inode + " NAME '" + item.name + "' UNALLOCATED INODE " + item.file_inode
+        elif (is_on_alloc_list(item.file_inode) == 0):
+            print "DIRECTORY INODE " + item.parent_inode + " NAME " + item.name + " UNALLOCATED INODE " + item.file_inode
         #check for . (itself) and .. (previous inode) correct linking
-        if item.name == "." and item.parent_inode != item.file_inode:
+        if item.name == "'.'" and item.parent_inode != item.file_inode:
             print "DIRECTORY INODE " + item.parent_inode + " NAME '.' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.parent_inode
-        if item.name == ".." and item.previous_inode != item.file_inode:
+        if item.name == "'..'" and item.previous_inode != item.file_inode:
             print "DIRECTORY INODE " + item.parent_inode + " NAME '..' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.previous_inode
         
             
