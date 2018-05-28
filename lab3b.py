@@ -275,6 +275,9 @@ def csv_dict_reader(file_obj):
             block_list[int(row[5]) - first_block].found_allocated()
             # Pointed to block clearly refered too
             block_list[int(row[5]) - first_block].add_ref(row[1], 0, str((int(row[2]) - 1)))
+        else:
+            print "The CSV file is invalid"
+            sys.exit(2)
 
 
 def check_blocks():
