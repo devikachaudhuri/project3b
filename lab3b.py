@@ -251,6 +251,9 @@ def csv_dict_reader(file_obj):
             block_list[int(row[5]) - first_block].found_allocated()
             # Pointed to block clearly refered too
             block_list[int(row[5]) - first_block].add_ref(row[1], 0, str((int(row[2]) - 1)))
+        else:
+            print "The CSV file is invalid"
+            sys.exit(2)
 
 
 def check_blocks():
@@ -266,11 +269,23 @@ def check_blocks():
 if __name__ == "__main__":
     ###### REMEMBER RETURN CODES AND ERROR HANDLING - TODO
     name_of_csv = sys.argv[1];
-    with open(name_of_csv) as f_obj:
-              csv_init_reader(f_obj)
+#    with open(name_of_csv) as f_obj:
+#              csv_init_reader(f_obj)
+    try:
+        f_obj = open(name_of_csv)
+    except IOError as e:
+        print "Open error: " + e.strerror
+        sys.exit(1)
+    csv_init_reader(f_obj)
     init_block_list()
-    with open(name_of_csv) as f_obj:
-              csv_dict_reader(f_obj)
+#    with open(name_of_csv) as f_obj:
+#             csv_dict_reader(f_obj)
+    try:
+        f_obj2 = open(name_of_csv)
+    except IOError as e:
+        print "Open error: " + e.strerror
+        sys.exit(1)
+    csv_dict_reader(f_obj2)
     check_inodes()
     check_directories()
     #check_blocks()
