@@ -24,6 +24,7 @@ class Directories:
         self.parent_inode = parent_inode;
         self.file_inode = file_inode;
         self.name = name;
+        self.previous_inode;
         
 ########################HELPER FUNCTIONS#################################
 
@@ -36,6 +37,14 @@ def update_inode_link_count(linked_ino):
     for item in inode_list:
         if item.number == linked_ino:
             item.links_to_me = item.links_to_me + 1
+
+def update_previous_inodes():#todo: this is slow.
+    for item in dir_list:
+        inode = item.parent_inode
+        for item2 in dirlist:
+            if inode == item.file_inode:
+                item.previous_inode = item2.parent_inode
+            
 
 ######################CHECKER FUNCTIONS####################################
 
@@ -51,6 +60,7 @@ def check_inodes():
             print "INODE " + item.number + " HAS " + str(item.recorded_link_count) + " LINKS BUT LINKCOUNT IS " + str(item.links_to_me)
 
 def check_directories():
+    update_previous_inodes()
     for item in dir_list:
         #check for invalid inodes
         if item.file_inode < 1 or item.file_inode > superblock[0].num_inodes:
@@ -58,6 +68,12 @@ def check_directories():
         #check for unallocate inodes
         if (is_on_free_list(item.file_inode)):
             print "DIRECTORY INODE " + item.parent_inode + " NAME '" + dir_list.name + "' UNALLOCATED INODE " + item.file_inode
+        #check for . (itself) and .. (previous inode) correct linking
+        if item.name == "." and item.parent_inode != item.file_inode:
+            print "DIRECTORY INODE " + item.parent_inode + " NAME '.' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.parent_inode
+        if item.name == ".." and item.previous_inode != item.file_inode:
+            print "DIRECTORY INODE " + item.parent_inode + " NAME '..' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.previous_inode
+        
             
 def csv_dict_reader(file_obj):
     reader = csv.reader(file_obj, delimiter=",")
