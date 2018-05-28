@@ -12,8 +12,18 @@ class Inodes:
         self.links_to_me = 0;
         self.on_free_list = -1;#0 means no, 1 means yes
         print("hi\n")
-    
 
+class Blocks:
+    class BlockRef:
+        def __init__(self, inode, offset):
+            self.inode = 0
+            self.offset = 0
+            print("reference made\n")
+    def __init__(self, number):
+        self.number = number
+        self.references = []
+        self.onFreelist = 0
+        self.allocated = 0
 
 def csv_dict_reader(file_obj):
     reader = csv.reader(file_obj, delimiter=",")
