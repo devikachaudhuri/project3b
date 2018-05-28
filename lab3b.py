@@ -80,7 +80,7 @@ def check_inodes():
     for item in inode_list:
         if str(item.recorded_link_count) != str(item.links_to_me):
             if item.number not in free_inode:
-                print "INODE " + item.number + " HAS " + str(item.recorded_link_count) + " LINKS BUT LINKCOUNT IS " + str(item.links_to_me)
+                print "INODE " + item.number + " HAS " + str(item.links_to_me)  + " LINKS BUT LINKCOUNT IS " + str(item.recorded_link_count)
 
 def check_directories():
     update_previous_inodes()
