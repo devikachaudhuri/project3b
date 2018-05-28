@@ -139,7 +139,8 @@ def init_block_list():
     #print(group_list[0].num_inodes + str(type(group_list[0].num_inodes)) + "\n") ### TEST
     #print(superblock[0].ino_size + str(type(superblock[0].ino_size)) + "\n") ### TEST
     #print(superblock[0].blk_size + str(type(superblock[0].blk_size)) + "\n") ### TEST
-    num_inode_blks = int(group_list[0].num_inodes) * int(superblock[0].ino_size) / int(superblock[0].blk_size)
+    num_inode_blks = int(group_list[0].num_inodes) * int(superblock[0].ino_size)\
+                     / int(superblock[0].blk_size)
     global first_block
     global max_block
     first_block = 5 + num_inode_blks
@@ -197,21 +198,25 @@ def check_block_num(blk_num_i, blk_num, inode_num, offset):
     # Accept the 15th pointer or a -3 code for the triple indirect blocks
     if (ptr_num == 15) or (blk_num_i == -3):
         blk_label = "TRIPLE INDIRECT BLOCK"
+        indirectness = "3"
         if (int(offset) == 0) and (ptr_num == 15): # Offset always 65804 for Inode triple
             offset = str(65804)                    #   indirect pointers
     # Accept the 14th pointer or a -2 code for the double indirect blocks
     elif (ptr_num == 14) or (blk_num_i == -2):
         blk_label = "DOUBLE INDIRECT BLOCK"
+        indirectness = "2"
         if (int(offset) == 0) and (ptr_num == 14): # Offset always 268 for Inode double
             offset = str(268)                      #   indirect pointers       
     # Accept the 13th pointer or a -1 code for the single indirect blocks
     elif (ptr_num == 13) or (blk_num_i == -1):
         blk_label = "INDIRECT BLOCK"
+        indirectness = "1"
         if (int(offset) == 0) and (ptr_num == 13): # Offset always 12 for Inode triple
             offset = str(12)                       #   indirect pointers
     # All others are normal blocks
     else:
         blk_label = "BLOCK"
+        indirectness = "0"
         if (int(offset) == 0) and ((ptr_num < 13) and (ptr_num > 0)):    
             offset = str(ptr_num - 1)           # Offset is the ptr number in inode list
                                                 #   if for a regular block
@@ -227,7 +232,8 @@ def check_block_num(blk_num_i, blk_num, inode_num, offset):
     if blk_index >= 0:
         # Valid block indices should be listed
         block_list[blk_index].found_allocated()
-        block_list[blk_index].add_ref(inode_num, "0", "0")
+        #def add_ref(self, inode, offset, indirectness)
+        block_list[blk_index].add_ref(inode_num, offset, indirectness)
         return 1
     else:
         # Reserved if within the first set of blocks
@@ -273,6 +279,7 @@ def csv_dict_reader(file_obj):
             #print("length row: " + str(len(row))) ### TEST
             if len(row) == 27: # Only loop if this has the appropriate number of entries
                 for blk_num_i in range(12, 26 + 1):
+                    #def check_block_num(blk_num_i, blk_num, inode_num, offset)
                     check_blk_ret = check_block_num(blk_num_i, row[blk_num_i], row[1], "0")
         elif row[0] == "DIRENT":
             d = Directories(row[1], row[3], row[6])
