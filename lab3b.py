@@ -164,12 +164,21 @@ def check_block_num(blk_num_i, blk_num, inode_num, offset):
     ptr_num = blk_num_i - 11                    # Convert the csv index to a pointer index
     if (ptr_num == 15) or (blk_num_i == -3):    # Accept the 15th pointer or a -3 code
         blk_label = "TRIPLE INDIRECT BLOCK"     #   for the triple indirect blocks
+        if (int(offset) == 0) and (ptr_num == 15): # Offset always 65804 for Inode triple
+            offset = str(65804)                    #   indirect pointers
     elif (ptr_num == 14) or (blk_num_i == -2):  # Accept the 14th pointer or a -2 code
         blk_label = "DOUBLE INDIRECT BLOCK"     #   for the double indirect blocks
+        if (int(offset) == 0) and (ptr_num == 14): # Offset always 268 for Inode double
+            offset = str(268)                      #   indirect pointers       
     elif (ptr_num == 13) or (blk_num_i == -1):  # Accept the 13th pointer or a -1 code
         blk_label = "INDIRECT BLOCK"            #   for the single indirect blocks
+        if (int(offset) == 0) and (ptr_num == 13): # Offset always 12 for Inode triple
+            offset = str(12)                       #   indirect pointers
     else:
         blk_label = "BLOCK"                     # All others are normal blocks
+        if (int(offset) == 0) and ((ptr_num < 13) and (ptr_num > 0)):    
+            offset = str(ptr_num - 1)           # Offset is the ptr number in inode list
+                                                #   if for a regular block
     blk_index = int(blk_num) - first_block      # index for the block list
     if (int(blk_num) > max_block) or (int(blk_num) < 0):
         # Invalid if the block number is obviously too big or too small
