@@ -149,7 +149,7 @@ def check_directories():
         if item.file_inode < 1 or item.file_inode > group_list[0].num_inodes:
             print "DIRECTORY INODE " + item.parent_inode + " NAME " + item.name + " INVALID INODE " + item.file_inode
         #check for unallocate inodes
-        if (is_on_alloc_list(item.file_inode)):
+        elif (is_on_alloc_list(item.file_inode) == 0):
             print "DIRECTORY INODE " + item.parent_inode + " NAME " + item.name + " UNALLOCATED INODE " + item.file_inode
         #check for . (itself) and .. (previous inode) correct linking
         if item.name == "'.'" and item.parent_inode != item.file_inode:
