@@ -233,32 +233,8 @@ def csv_dict_reader(file_obj):
             # Update the blocks in the inode entry
             #print("length row: " + str(len(row))) ### TEST
             if len(row) == 27: # Only loop if this has the appropriate number of entries
-                for blk_num_i in range(12, 26):
+                for blk_num_i in range(12, 26 + 1):
                     check_blk_ret = check_block_num(blk_num_i, row[blk_num_i], row[1], "0")
-                    
-#                    ptr_num = blk_num_i - 11
-#                    if ptr_num == 15:
-#                        blk_label = "TRIPLE INDIRECT BLOCK"
-#                    elif ptr_num == 14:
-#                        blk_label = "DOUBLE INDIRECT BLOCK"
-#                    elif ptr_num == 13:
-#                        blk_label = "INDIRECT BLOCK"
-#                    else:
-#                        blk_label = "BLOCK"
-#                    blk_num = int(row[blk_num_i])
-#                    blk_index = blk_num - first_block
-#                    if (blk_num > MAX_BLOCK) or (blk_num < 0):
-#                        print("INVALID " + blk_label + " " + row[blk_num_i] + " IN INODE "\
-#                              + row[1] + " AT OFFSET " + "0")
-#                    if blk_index >= 0:
-#                        ### TEST
-#                        #print("entry#: " + str(blk_num_i) + "; entry: " + row[blk_num_i])
-#                        # Valid block indices should be listed
-#                        block_list[blk_index].found_allocated()
-#                        block_list[blk_index].add_ref(row[1], 0, 0)
-#                    else:
-#                        print("RESERVED " + blk_label + " " + row[blk_num_i] + " IN INODE "\
-#                              + row[1] + " AT OFFSET " + "0")
         if row[0] == "DIRENT":
             d = Directories(row[1], row[3], row[6])
             dir_list.append(d)
