@@ -5,11 +5,18 @@ import csv
 inode_list = list()
 dir_list = list()
 superblock = list()
+block_list = list()
+group_list = list()
 
 ##########################CLASSES#######################################
 class Super:
-    def __init__(self):
-        self.num_inodes = -1
+    def __init__(self, inodeSize, blockSize):
+        self.ino_size = inodeSize
+        self.blk_size = blockSize
+
+class Group:
+    def __init__(self, num_inodes):
+        self.num_inodes = num_inodes
         
 class Inodes:
     def __init__(self, number):
@@ -19,17 +26,28 @@ class Inodes:
         self.allocated = -1
         self.recorded_link_count = 0
 
-class Blocks:
+class Block:
     class BlockRef:
         def __init__(self, inode, offset):
             self.inode = 0
             self.offset = 0
-            print("reference made\n")
+            print("reference made\n") ###### TEST
+
     def __init__(self, number):
         self.number = number
         self.references = []
         self.onFreelist = 0
         self.allocated = 0
+
+    def add_ref(self, inode, offset):
+        ref = BlockRef(inode, offset)
+        self.references.append(ref)
+
+    def allocated(self):
+        self.allocated = 1
+
+    def on_free_list(self):
+        self.on_free_list = 1
 
 class Directories:
     def __init__(self, parent_inode, file_inode, name):
@@ -57,6 +75,10 @@ def update_previous_inodes():#todo: this is slow.
             if inode == item.file_inode:
                 item.previous_inode = item2.parent_inode
             
+def init_block_list():
+    for block_num in range( , ):
+        block = Block(block_num)
+        block_list.append(block)
 
 ######################CHECKER FUNCTIONS####################################
 
@@ -75,7 +97,7 @@ def check_directories():
     update_previous_inodes()
     for item in dir_list:
         #check for invalid inodes
-        if item.file_inode < 1 or item.file_inode > superblock[0].num_inodes:
+        if item.file_inode < 1 or item.file_inode > group[0].num_inodes:
             print "DIRECTORY INODE " + item.parent_inode + " NAME '" + dir_list.name + "' INVALID INODE " + item.file_inode
         #check for unallocate inodes
         if (is_on_free_list(item.file_inode)):
@@ -104,12 +126,20 @@ def csv_dict_reader(file_obj):
             update_inode_link_count(row[1])
             dir_list.append(d)
         if row[0] == "SUPERBLOCK":
-            s = Super()
-            s.num_inodes = row[2]
+            s = Super(row[5], row[4])
             superblock.append(s)
+        if row[0] == "GROUP":
+            g = Group(row[4])
+            group_list.append(g)
+
+def check_blocks():
+    
+
         
 if __name__ == "__main__":
+    ###### REMEMBER RETURN CODES AND ERROR HANDLING - TODO
     with open("trivial.csv") as f_obj:
               csv_dict_reader(f_obj)
     check_inodes()
     check_directories()
+
