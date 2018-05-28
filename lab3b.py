@@ -10,9 +10,10 @@ group_list = list()
 
 ##########################CLASSES#######################################
 class Super:
-    def __init__(self, inodeSize, blockSize):
+    def __init__(self, inodeSize, blockSize, numBlocks):
         self.ino_size = inodeSize
         self.blk_size = blockSize
+        self.num_blks = numBlocks
 
 class Group:
     def __init__(self, num_inodes):
@@ -76,7 +77,9 @@ def update_previous_inodes():#todo: this is slow.
                 item.previous_inode = item2.parent_inode
             
 def init_block_list():
-    for block_num in range( , ):
+    num_inode_blks = group_list[0].num_inodes * superblock[0].ino_size / superblock[0].blk_size
+    firstblk = 5 + num_inode_blks
+    for block_num in range(firstblk, superblock[0].num_blks):
         block = Block(block_num)
         block_list.append(block)
 
@@ -126,7 +129,7 @@ def csv_dict_reader(file_obj):
             update_inode_link_count(row[1])
             dir_list.append(d)
         if row[0] == "SUPERBLOCK":
-            s = Super(row[5], row[4])
+            s = Super(row[5], row[4], row[2])
             superblock.append(s)
         if row[0] == "GROUP":
             g = Group(row[4])
