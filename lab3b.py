@@ -213,17 +213,20 @@ def csv_init_reader(file_obj):
 def csv_dict_reader(file_obj):
     reader = csv.reader(file_obj, delimiter=",")
     for row in reader:
+        if len(row) < 0:
+            print "The CSV file is invalid"
+            sys.exit(2)
         if row[0] == "BFREE": #denote the block is free
             #print("bfree: " + row[1]) ### TEST
             #print(int(row[1]) - first_block) ### TEST
             block_list[int(row[1]) - first_block].on_free_list()
-        if row[0] == "IFREE": #put the free inodes on the inode list
+        elif row[0] == "IFREE": #put the free inodes on the inode list
             i = Inodes(row[1])
             n = row[1]
             inode_numbers.append(n)
             free_inode.append(n)
             inode_list.append(i)
-        if row[0] == "INODE": #put the allocated inodes on the inode list
+        elif row[0] == "INODE": #put the allocated inodes on the inode list
             k = Inodes(row[1])
             k.recorded_link_count = row[6]#record the link count
             n = row[1]
@@ -235,10 +238,10 @@ def csv_dict_reader(file_obj):
             if len(row) == 27: # Only loop if this has the appropriate number of entries
                 for blk_num_i in range(12, 26 + 1):
                     check_blk_ret = check_block_num(blk_num_i, row[blk_num_i], row[1], "0")
-        if row[0] == "DIRENT":
+        elif row[0] == "DIRENT":
             d = Directories(row[1], row[3], row[6])
             dir_list.append(d)
-        if row[0] == "INDIRECT":
+        elif row[0] == "INDIRECT":
             # Allocated if in an indirect block
             block_list[int(row[4]) - first_block].found_allocated()
             # Also refered to if in an indirect block
@@ -251,11 +254,7 @@ def csv_dict_reader(file_obj):
             block_list[int(row[5]) - first_block].found_allocated()
             # Pointed to block clearly refered too
             block_list[int(row[5]) - first_block].add_ref(row[1], 0, str((int(row[2]) - 1)))
-        else:
-            print "The CSV file is invalid"
-            sys.exit(2)
-
-
+        
 def check_blocks():
     #print(str(len(block_list)))
     #print(block_list[0].number)
@@ -274,7 +273,7 @@ if __name__ == "__main__":
     try:
         f_obj = open(name_of_csv)
     except IOError as e:
-        print "Open error: " + e.strerror
+        sys.stderr.write("Open error: " + e.strerror + "\n")
         sys.exit(1)
     csv_init_reader(f_obj)
     init_block_list()
@@ -283,7 +282,7 @@ if __name__ == "__main__":
     try:
         f_obj2 = open(name_of_csv)
     except IOError as e:
-        print "Open error: " + e.strerror
+        sys.stderr.write("Open error: " + e.strerror + "\n")
         sys.exit(1)
     csv_dict_reader(f_obj2)
     check_inodes()
