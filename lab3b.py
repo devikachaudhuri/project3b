@@ -14,17 +14,18 @@ block_list = list()
 group_list = list()
 reserved = 9 #OR 10??? (not including inode 2)
 first_block = 0
+max_block = 0
 
 ##########################CLASSES#######################################
 class Super:
-    def __init__(self, inodeSize, blockSize, numBlocks):
+    def __init__(self, inodeSize, blockSize):
         self.ino_size = inodeSize
         self.blk_size = blockSize
-        self.num_blks = numBlocks
 
 class Group:
-    def __init__(self, num_inodes):
+    def __init__(self, num_inodes, numBlocks):
         self.num_inodes = num_inodes
+        self.num_blks = numBlocks
         
 class Inodes:
     def __init__(self, number):
@@ -108,8 +109,10 @@ def init_block_list():
     #print(superblock[0].blk_size + str(type(superblock[0].blk_size)) + "\n") ### TEST
     num_inode_blks = int(group_list[0].num_inodes) * int(superblock[0].ino_size) / int(superblock[0].blk_size)
     global first_block
+    global max_block
     first_block = 5 + num_inode_blks
-    for block_num in range(first_block, int(superblock[0].num_blks)):
+    max_block = int(group_list[0].num_blks)
+    for block_num in range(first_block, max_block):
         block = Block(block_num)
         block_list.append(block)
     #print("first block: " + str(first_block) + "; num blocks: " + str(len(block_list)) + "; type: " + str(type(block_list[0])) + "\n") ### TEST
@@ -156,16 +159,46 @@ def check_directories():
             print "DIRECTORY INODE " + item.parent_inode + " NAME '.' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.parent_inode
         if item.name == "'..'" and item.previous_inode != item.file_inode:
             print "DIRECTORY INODE " + item.parent_inode + " NAME '..' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.previous_inode
-        
+
+def check_block_num(blk_num_i, blk_num, inode_num, offset):
+    ptr_num = blk_num_i - 11                    # Convert the csv index to a pointer index
+    if (ptr_num == 15) or (blk_num_i == -3):    # Accept the 15th pointer or a -3 code
+        blk_label = "TRIPLE INDIRECT BLOCK"     #   for the triple indirect blocks
+    elif (ptr_num == 14) or (blk_num_i == -2):  # Accept the 14th pointer or a -2 code
+        blk_label = "DOUBLE INDIRECT BLOCK"     #   for the double indirect blocks
+    elif (ptr_num == 13) or (blk_num_i == -1):  # Accept the 13th pointer or a -1 code
+        blk_label = "INDIRECT BLOCK"            #   for the single indirect blocks
+    else:
+        blk_label = "BLOCK"                     # All others are normal blocks
+    blk_index = int(blk_num) - first_block      # index for the block list
+    if (int(blk_num) > max_block) or (int(blk_num) < 0):
+        # Invalid if the block number is obviously too big or too small
+        print("INVALID " + blk_label + " " + blk_num + " IN INODE "\
+              + inode_num + " AT OFFSET " + offset)
+        return -1
+    if (int(blk_num) == 0):
+        # Null pointers/no block referenced
+        return 0
+    if blk_index >= 0:
+        # Valid block indices should be listed
+        block_list[blk_index].found_allocated()
+        block_list[blk_index].add_ref(inode_num, 0, 0)
+        return 1
+    else:
+        # Reserved if within the first set of blocks
+        print("RESERVED " + blk_label + " " + blk_num + " IN INODE "\
+              + inode_num + " AT OFFSET " + offset)       
+        return -1
 
 def csv_init_reader(file_obj):
+    # Read the Superblock and Group entries first for initialization
     reader = csv.reader(file_obj, delimiter=",")
     for row in reader:
         if row[0] == "SUPERBLOCK":
-            s = Super(row[4], row[3], row[1])
+            s = Super(row[4], row[3])
             superblock.append(s)
         if row[0] == "GROUP":
-            g = Group(row[3])
+            g = Group(row[3], row[2])
             group_list.append(g)
             
 def csv_dict_reader(file_obj):
@@ -192,13 +225,31 @@ def csv_dict_reader(file_obj):
             #print("length row: " + str(len(row))) ### TEST
             if len(row) == 27: # Only loop if this has the appropriate number of entries
                 for blk_num_i in range(12, 26):
-                    blk_index = int(row[blk_num_i]) - first_block
-                    if blk_index >= 0:
-                        ### TEST
-                        #print("entry#: " + str(blk_num_i) + "; entry: " + row[blk_num_i])
-                        # Valid block indices should be listed
-                        block_list[blk_index].found_allocated()
-                        block_list[blk_index].add_ref(row[1], 0, 0)
+                    check_blk_ret = check_block_num(blk_num_i, row[blk_num_i], row[1], "0")
+                    
+#                    ptr_num = blk_num_i - 11
+#                    if ptr_num == 15:
+#                        blk_label = "TRIPLE INDIRECT BLOCK"
+#                    elif ptr_num == 14:
+#                        blk_label = "DOUBLE INDIRECT BLOCK"
+#                    elif ptr_num == 13:
+#                        blk_label = "INDIRECT BLOCK"
+#                    else:
+#                        blk_label = "BLOCK"
+#                    blk_num = int(row[blk_num_i])
+#                    blk_index = blk_num - first_block
+#                    if (blk_num > MAX_BLOCK) or (blk_num < 0):
+#                        print("INVALID " + blk_label + " " + row[blk_num_i] + " IN INODE "\
+#                              + row[1] + " AT OFFSET " + "0")
+#                    if blk_index >= 0:
+#                        ### TEST
+#                        #print("entry#: " + str(blk_num_i) + "; entry: " + row[blk_num_i])
+#                        # Valid block indices should be listed
+#                        block_list[blk_index].found_allocated()
+#                        block_list[blk_index].add_ref(row[1], 0, 0)
+#                    else:
+#                        print("RESERVED " + blk_label + " " + row[blk_num_i] + " IN INODE "\
+#                              + row[1] + " AT OFFSET " + "0")
         if row[0] == "DIRENT":
             d = Directories(row[1], row[3], row[6])
             dir_list.append(d)
@@ -206,19 +257,25 @@ def csv_dict_reader(file_obj):
             # Allocated if in an indirect block
             block_list[int(row[4]) - first_block].found_allocated()
             # Also refered to if in an indirect block
-            #block_list[int(row[4]) - first_block].add_ref(row[1], row[3], row[2])
+            #block_list[int(row[4]) - first_block].add_ref(row[1], row[3], row[2]
+            # Check the pointed to block)
+            check_blk_ret = check_block_num(-int(row[2]), row[5], row[1], row[3])
+            if check_blk_ret != 1:
+                continue
             # Pointed to block allocated too
             block_list[int(row[5]) - first_block].found_allocated()
             # Pointed to block clearly refered too
             block_list[int(row[5]) - first_block].add_ref(row[1], 0, str((int(row[2]) - 1)))
 
+
 def check_blocks():
-    print(str(len(block_list)))
-    print(block_list[0].number)
+    #print(str(len(block_list)))
+    #print(block_list[0].number)
     print(block_list[len(block_list)-1].number)
-    for blk in block_list:
-        print("block " + str(blk.number) + ": Free/Refrences/Allocated? " + \
-              str(blk.onFreelist) + str(len(blk.references)) + str(blk.allocated))
+    #for blk in block_list:
+    #    if 
+        #print("block " + str(blk.number) + ": Free/Refrences/Allocated? " + \
+        #      str(blk.onFreelist) + str(len(blk.references)) + str(blk.allocated))
               
        
 if __name__ == "__main__":
