@@ -15,6 +15,7 @@ group_list = list()
 reserved = 9 #OR 10??? (not including inode 2)
 first_block = 0
 max_block = 0
+inconsist_found = 0
 
 ##########################CLASSES#######################################
 class Super:
@@ -60,21 +61,27 @@ class Block:
         self.onFreelist = 1
     
     def chk_unreferenced(self):
+        global inconsist_found
         if (self.allocated == 0) and (self.onFreelist == 0):
             # Print appropriate error msg if neither allocated nor on free list
             print("UNREFERENCED BLOCK " + str(self.number))
+            inconsist_found = 1
             return 1
         return 0
 
     def chk_alloc_on_free(self):
+        global inconsist_found
         if (self.allocated == 1) and (self.onFreelist == 1):
             # Print appropriate error msg if allocated and on the free list
             print("ALLOCATED BLOCK " + str(self.number) + " ON FREELIST")
+            inconsist_found = 1
             return 1
         return 0
     
     def chk_duplicate_ref(self):
+        global inconsist_found
         if (len(self.references) > 1):
+            inconsist_found = 1
             for ref in self.references:
                 # Loop through all the references and print appropriate error msgs
                 if ref.indirectness == "3":
@@ -150,38 +157,49 @@ def is_there_unallocated_inodes():
 ######################CHECKER FUNCTIONS####################################
 
 def check_inodes():
+    global inconsist_found
     update_inode_link_count()
     is_there_unallocated_inodes()
     for x in unallocated_and_not_on_free_list:
+        inconsist_found = 1
         print "UNALLOCATED INODE " + str(x) + " NOT ON FREELIST"
     for x in free_inode:
         if x in alloc_inode:
+            inconsist_found = 1
             print "ALLOCATED INODE " + x + " ON FREELIST"
     for item in inode_list:
         if str(item.recorded_link_count) != str(item.links_to_me):
             if item.number not in free_inode:
-                print "INODE " + item.number + " HAS " + str(item.links_to_me)  + " LINKS BUT LINKCOUNT IS " + str(item.recorded_link_count)
+                inconsist_found = 1
+                print "INODE " + item.number + " HAS " + str(item.links_to_me)  \
+                    + " LINKS BUT LINKCOUNT IS " + str(item.recorded_link_count)
 
 def check_directories():
+    global inconsist_found
     update_previous_inodes()
     for item in dir_list:
         #check for invalid inodes
         if item.file_inode < 1 or item.file_inode > group_list[0].num_inodes:
+            inconsist_found = 1
             print "DIRECTORY INODE " + item.parent_inode + " NAME " \
                 + item.name + " INVALID INODE " + item.file_inode
         #check for unallocate inodes
         elif (is_on_alloc_list(item.file_inode) == 0):
+            inconsist_found = 1
             print "DIRECTORY INODE " + item.parent_inode + " NAME " \
                 + item.name + " UNALLOCATED INODE " + item.file_inode
         #check for . (itself) and .. (previous inode) correct linking
         if item.name == "'.'" and item.parent_inode != item.file_inode:
+            inconsist_found = 1
             print "DIRECTORY INODE " + item.parent_inode + " NAME '.' LINK TO INODE " \
                 + item.file_inode + " SHOULD BE " + item.parent_inode
         if item.name == "'..'" and item.previous_inode != item.file_inode:
+            inconsist_found = 1
             print "DIRECTORY INODE " + item.parent_inode + " NAME '..' LINK TO INODE " \
                 + item.file_inode + " SHOULD BE " + item.previous_inode
 
 def check_block_num(blk_num_i, blk_num, inode_num, offset):
+    global inconsist_found
     ptr_num = blk_num_i - 11                    # Convert the csv index to a pointer index
     # Accept the 15th pointer or a -3 code for the triple indirect blocks
     if (ptr_num == 15) or (blk_num_i == -3):
@@ -211,6 +229,7 @@ def check_block_num(blk_num_i, blk_num, inode_num, offset):
     blk_index = int(blk_num) - first_block # index for the block list
     if (int(blk_num) > max_block) or (int(blk_num) < 0):
         # Invalid if the block number is obviously too big or too small
+        inconsist_found = 1
         print("INVALID " + blk_label + " " + blk_num + " IN INODE "\
               + inode_num + " AT OFFSET " + offset)
         return -1
@@ -225,6 +244,7 @@ def check_block_num(blk_num_i, blk_num, inode_num, offset):
         return 1
     else:
         # Reserved if within the first set of blocks
+        inconsist_found = 1
         print("RESERVED " + blk_label + " " + blk_num + " IN INODE "\
               + inode_num + " AT OFFSET " + offset)       
         return -1
@@ -311,3 +331,8 @@ if __name__ == "__main__":
     check_inodes()
     check_directories()
     check_blocks()
+#    global inconsist_found
+    if (inconsist_found):
+        sys.exit(2)
+    elif (inconsist_found):
+        sys.exit(0)
