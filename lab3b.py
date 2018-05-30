@@ -1,3 +1,4 @@
+
 #!/usr/bin/python
 
 import csv
@@ -48,7 +49,6 @@ class Block:
 
     def add_ref(self, inode, offset, indirectness):
         # Arguments are passed as strings
-        #print(str(self.number) + " adding ref: inode " + inode + ", offset " + offset + ", indir " + indirectness)### TEST
         ref = BlockRef(inode, offset, indirectness)
         self.references.append(ref)
 
@@ -118,27 +118,18 @@ def update_inode_link_count():
                 item.links_to_me = item.links_to_me + 1
                 
 
-def update_previous_inodes():#todo: this is slow.
+def update_previous_inodes():
     for item in dir_list:
-#       print "item " + str(item.parent_inode)
         inode = str(item.parent_inode)
         if inode == '2':
             item.previous_inode = '2'
         else:
             for item2 in dir_list:
-#            print "item2 " + str(item2.parent_inode)
                 if inode == str(item2.file_inode) and item2.name != "'.'":
-#                    print "item name" + item.name
-#                    print "item2 name" + item2.name
-#                    print "inode " + str(item.parent_inode)
-#                    print "previous inode " + str(item2.parent_inode)
                     item.previous_inode = str(item2.parent_inode)
                     continue
             
 def init_block_list():
-    #print(group_list[0].num_inodes + str(type(group_list[0].num_inodes)) + "\n") ### TEST
-    #print(superblock[0].ino_size + str(type(superblock[0].ino_size)) + "\n") ### TEST
-    #print(superblock[0].blk_size + str(type(superblock[0].blk_size)) + "\n") ### TEST
     num_inode_blks = int(group_list[0].num_inodes) * int(superblock[0].ino_size)\
                      / int(superblock[0].blk_size)
     global first_block
@@ -148,8 +139,6 @@ def init_block_list():
     for block_num in range(first_block, max_block):
         block = Block(block_num)
         block_list.append(block)
-    #print("first block: " + str(first_block) + "; num blocks: " + str(len(block_list)) + "; type: " + str(type(block_list[0])) + "\n") ### TEST
-
 
 def is_there_unallocated_inodes():
     zero = int(group_list[0].num_inodes) - reserved - len(inode_list)
@@ -177,21 +166,21 @@ def check_inodes():
 def check_directories():
     update_previous_inodes()
     for item in dir_list:
-        #print "name" + item.name
-        #print "item.parent node" + item.parent_inode
-        #print "item.file node" + item.file_inode
-        #print "item.previous node" + str(item. previous_inode)
         #check for invalid inodes
         if item.file_inode < 1 or item.file_inode > group_list[0].num_inodes:
-            print "DIRECTORY INODE " + item.parent_inode + " NAME " + item.name + " INVALID INODE " + item.file_inode
+            print "DIRECTORY INODE " + item.parent_inode + " NAME " \
+                + item.name + " INVALID INODE " + item.file_inode
         #check for unallocate inodes
         elif (is_on_alloc_list(item.file_inode) == 0):
-            print "DIRECTORY INODE " + item.parent_inode + " NAME " + item.name + " UNALLOCATED INODE " + item.file_inode
+            print "DIRECTORY INODE " + item.parent_inode + " NAME " \
+                + item.name + " UNALLOCATED INODE " + item.file_inode
         #check for . (itself) and .. (previous inode) correct linking
         if item.name == "'.'" and item.parent_inode != item.file_inode:
-            print "DIRECTORY INODE " + item.parent_inode + " NAME '.' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.parent_inode
+            print "DIRECTORY INODE " + item.parent_inode + " NAME '.' LINK TO INODE " \
+                + item.file_inode + " SHOULD BE " + item.parent_inode
         if item.name == "'..'" and item.previous_inode != item.file_inode:
-            print "DIRECTORY INODE " + item.parent_inode + " NAME '..' LINK TO INODE " + item.file_inode + " SHOULD BE " + item.previous_inode
+            print "DIRECTORY INODE " + item.parent_inode + " NAME '..' LINK TO INODE " \
+                + item.file_inode + " SHOULD BE " + item.previous_inode
 
 def check_block_num(blk_num_i, blk_num, inode_num, offset):
     ptr_num = blk_num_i - 11                    # Convert the csv index to a pointer index
@@ -232,7 +221,7 @@ def check_block_num(blk_num_i, blk_num, inode_num, offset):
     if blk_index >= 0:
         # Valid block indices should be listed
         block_list[blk_index].found_allocated()
-        #def add_ref(self, inode, offset, indirectness)
+        # add_ref(self, inode, offset, indirectness)
         block_list[blk_index].add_ref(inode_num, offset, indirectness)
         return 1
     else:
@@ -245,6 +234,9 @@ def csv_init_reader(file_obj):
     # Read the Superblock and Group entries first for initialization
     reader = csv.reader(file_obj, delimiter=",")
     for row in reader:
+        if len(row) < 0:
+            print "The CSV file is invalid"
+            sys.exit(2)
         if row[0] == "SUPERBLOCK":
             s = Super(row[4], row[3])
             superblock.append(s)
@@ -259,8 +251,6 @@ def csv_dict_reader(file_obj):
             print "The CSV file is invalid"
             sys.exit(2)
         if row[0] == "BFREE": #denote the block is free
-            #print("bfree: " + row[1]) ### TEST
-            #print(int(row[1]) - first_block) ### TEST
             block_list[int(row[1]) - first_block].on_free_list()
         elif row[0] == "IFREE": #put the free inodes on the inode list
             i = Inodes(row[1])
@@ -276,7 +266,6 @@ def csv_dict_reader(file_obj):
             alloc_inode.append(n)
             inode_list.append(k)
             # Update the blocks in the inode entry
-            #print("length row: " + str(len(row))) ### TEST
             if len(row) == 27: # Only loop if this has the appropriate number of entries
                 for blk_num_i in range(12, 26 + 1):
                     #def check_block_num(blk_num_i, blk_num, inode_num, offset)
@@ -287,28 +276,15 @@ def csv_dict_reader(file_obj):
         elif row[0] == "INDIRECT":
             # Allocated if in an indirect block
             block_list[int(row[4]) - first_block].found_allocated()
-            # Also refered to if in an indirect block
-            #block_list[int(row[4]) - first_block].add_ref(row[1], row[3], row[2]
-            # Check the pointed to block
+            # Check the pointed to block - also marks referred to
             check_blk_ret = check_block_num(-int(row[2]), row[5], row[1], row[3])
             if check_blk_ret != 1:
                 continue
             # Pointed to block allocated too
             block_list[int(row[5]) - first_block].found_allocated()
-            # Pointed to block clearly refered too
-            #block_list[int(row[5]) - first_block].add_ref(row[1], "0", \
-            #                                              str((int(row[2])-1)))
 
 
 def check_blocks():
-    #print(str(len(block_list)))
-    #print(block_list[0].number)
-    #print(block_list[len(block_list)-1].number)
-    #for blk in block_list: ### TEST
-    #    print("block " + str(blk.number) + ": Free/Refrences/Allocated? " + \
-    #          str(blk.onFreelist) + str(len(blk.references)) + str(blk.allocated))
-    #print("\n") ### TEST
-
     for blk in block_list:
         blk.chk_unreferenced()
         blk.chk_alloc_on_free()
@@ -316,10 +292,7 @@ def check_blocks():
               
        
 if __name__ == "__main__":
-    ###### REMEMBER RETURN CODES AND ERROR HANDLING - TODO
     name_of_csv = sys.argv[1];
-#    with open(name_of_csv) as f_obj:
-#              csv_init_reader(f_obj)
     try:
         f_obj = open(name_of_csv)
     except IOError as e:
@@ -327,8 +300,6 @@ if __name__ == "__main__":
         sys.exit(1)
     csv_init_reader(f_obj)
     init_block_list()
-#    with open(name_of_csv) as f_obj:
-#             csv_dict_reader(f_obj)
     try:
         f_obj2 = open(name_of_csv)
     except IOError as e:
