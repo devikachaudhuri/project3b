@@ -245,6 +245,9 @@ def csv_init_reader(file_obj):
     # Read the Superblock and Group entries first for initialization
     reader = csv.reader(file_obj, delimiter=",")
     for row in reader:
+        if len(row) <= 0:
+            print "The CSV file is invalid"
+            sys.exit(2)
         if row[0] == "SUPERBLOCK":
             s = Super(row[4], row[3])
             superblock.append(s)
@@ -255,7 +258,7 @@ def csv_init_reader(file_obj):
 def csv_dict_reader(file_obj):
     reader = csv.reader(file_obj, delimiter=",")
     for row in reader:
-        if len(row) < 0:
+        if len(row) <= 0:
             print "The CSV file is invalid"
             sys.exit(2)
         if row[0] == "BFREE": #denote the block is free
@@ -317,6 +320,10 @@ def check_blocks():
        
 if __name__ == "__main__":
     ###### REMEMBER RETURN CODES AND ERROR HANDLING - TODO
+    if len(sys.argv) <= 1:
+        sys.stderr.write("No csv file provided.\n")
+        sys.exit(1)
+    
     name_of_csv = sys.argv[1];
 #    with open(name_of_csv) as f_obj:
 #              csv_init_reader(f_obj)
